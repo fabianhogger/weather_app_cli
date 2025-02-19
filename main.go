@@ -59,7 +59,7 @@ type WeatherData struct {
 	Current  Current  `json:"current"`
 }
 
-func Init() {
+func loadEnv() {
 	path, rerr := os.Getwd()
 	if rerr != nil {
 		panic(rerr)
@@ -91,7 +91,7 @@ func getData() ([]byte, error) {
 
 func main() {
 	var wdata WeatherData
-	Init()
+	loadEnv()
 	body, errBody := getData()
 	if errBody != nil {
 		log.Fatal("error reading response")

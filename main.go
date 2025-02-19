@@ -1,15 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"io"
 	"log"
 	"net/http"
-	"encoding/json"
 	"os"
-    "github.com/joho/godotenv"
-    "errors"
 )
+
+var myWeatherAPIKEY string
+
 type Condition struct {
 	Text string `json:"text"`
 	Icon string `json:"icon"`
@@ -18,25 +20,25 @@ type Condition struct {
 
 // Define the struct for the "current" object
 type Current struct {
-	LastUpdatedEpoch int      `json:"last_updated_epoch"`
-	LastUpdated      string   `json:"last_updated"`
-	TempC            float64  `json:"temp_c"`
-	IsDay            int      `json:"is_day"`
+	LastUpdatedEpoch int       `json:"last_updated_epoch"`
+	LastUpdated      string    `json:"last_updated"`
+	TempC            float64   `json:"temp_c"`
+	IsDay            int       `json:"is_day"`
 	Condition        Condition `json:"condition"`
-	WindKph          float64  `json:"wind_kph"`
-	WindDegree       int      `json:"wind_degree"`
-	WindDir          string   `json:"wind_dir"`
-	PressureMb       float64  `json:"pressure_mb"`
-	PrecipMm         float64  `json:"precip_mm"`
-	Humidity         int      `json:"humidity"`
-	Cloud            int      `json:"cloud"`
-	FeelslikeC       float64  `json:"feelslike_c"`
-	WindchillC       float64  `json:"windchill_c"`
-	HeatindexC       float64  `json:"heatindex_c"`
-	DewpointC        float64  `json:"dewpoint_c"`
-	VisKm            float64  `json:"vis_km"`
-	UV               float64  `json:"uv"`
-	GustKph          float64  `json:"gust_kph"`
+	WindKph          float64   `json:"wind_kph"`
+	WindDegree       int       `json:"wind_degree"`
+	WindDir          string    `json:"wind_dir"`
+	PressureMb       float64   `json:"pressure_mb"`
+	PrecipMm         float64   `json:"precip_mm"`
+	Humidity         int       `json:"humidity"`
+	Cloud            int       `json:"cloud"`
+	FeelslikeC       float64   `json:"feelslike_c"`
+	WindchillC       float64   `json:"windchill_c"`
+	HeatindexC       float64   `json:"heatindex_c"`
+	DewpointC        float64   `json:"dewpoint_c"`
+	VisKm            float64   `json:"vis_km"`
+	UV               float64   `json:"uv"`
+	GustKph          float64   `json:"gust_kph"`
 }
 
 // Define the struct for the "location" object
@@ -59,49 +61,44 @@ type WeatherData struct {
 
 func Init() {
 	path, rerr := os.Getwd()
-    if rerr != nil {
-        panic(rerr)
-    }
-  	err := godotenv.Load(path+"/.env")
+	if rerr != nil {
+		panic(rerr)
+	}
+	err := godotenv.Load(path + "/.env")
 	if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
-    }
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+	myWeatherAPIKEY = os.Getenv("API_KEY")
+
 }
 
-func getData() string error {
-	var myWeatherAPIKEY = os.Getenv("API_KEY")
-	res, errRequest := http.Get("http://api.weatherapi.com/v1/current.json?key="+myWeatherAPIKEY+"&q=London&aqi=no")
+func getData() ([]byte, error) {
+	res, errRequest := http.Get("http://api.weatherapi.com/v1/current.json?key=" + myWeatherAPIKEY + "&q=London&aqi=no")
+	body, errBody := io.ReadAll(res.Body)
+
 	if res.StatusCode > 299 {
 		log.Fatal("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}	
-	if errRequest != nil {
-		return errRequest
 	}
-	return 
+	if errRequest != nil {
+		return nil, errRequest
+	}
+	if errBody != nil {
+		return nil, errBody
+	}
+	res.Body.Close()
+	return body, nil
 }
 
 func main() {
+	var wdata WeatherData
 	Init()
-	var myWeatherAPIKEY = os.Getenv("API_KEY")
-	res, errRequest := http.Get("http://api.weatherapi.com/v1/current.json?key="+myWeatherAPIKEY+"&q=London&aqi=no")
-	if res.StatusCode > 299 {
-		log.Fatal("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}	
-	if request_err != nil {
-		log.Fatal(errRequest)
-	}
-	body, errBody := io.ReadAll(res.Body)
+	body, errBody := getData()
 	if errBody != nil {
-		log.Fatal(errBody)
-	}	
-	res.Body.Close()
-
-	var wdata  WeatherData
-	fmt.Printf("%s", body)
+		log.Fatal("error reading response")
+	}
 
 	if json_err := json.Unmarshal(body, &wdata); json_err != nil {
-		 log.Fatal(json_err)
+		log.Fatal(json_err)
 	}
-	fmt.Println("%s",wdata.Location)
- }
-
+	fmt.Println("%s", wdata.Location)
+}

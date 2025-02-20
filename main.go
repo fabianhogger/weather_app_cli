@@ -57,6 +57,40 @@ type Location struct {
 type WeatherData struct {
 	Location Location `json:"location"`
 	Current  Current  `json:"current"`
+	ForeCast ForeCast `json:"forecast"`
+}
+type Forecastday []struct {
+	Date string `json:"date"`
+	Day  struct {
+		MaxtempC          float64 `json:"maxtemp_c"`
+		MintempC          float64 `json:"mintemp_c"`
+		AvgtempC          float64 `json:"avgtemp_c"`
+		AvgtempF          float64 `json:"avgtemp_f"`
+		MaxwindKph        float64 `json:"maxwind_kph"`
+		TotalsnowCm       float64 `json:"totalsnow_cm"`
+		AvgvisKm          float64 `json:"avgvis_km"`
+		Avghumidity       float64 `json:"avghumidity"`
+		DailyWillItRain   int     `json:"daily_will_it_rain"`
+		DailyChanceOfRain int     `json:"daily_chance_of_rain"`
+		DailyWillItSnow   int     `json:"daily_will_it_snow"`
+		DailyChanceOfSnow int     `json:"daily_chance_of_snow"`
+		Condition         struct {
+			Text string `json:"text"`
+			Icon string `json:"icon"`
+			Code int    `json:"code"`
+		} `json:"condition"`
+	} `json:"day"`
+	Astro struct {
+		Sunrise  string `json:"sunrise"`
+		Sunset   string `json:"sunset"`
+		Moonrise string `json:"moonrise"`
+		Moonset  string `json:"moonset"`
+		IsMoonUp int    `json:"is_moon_up"`
+		IsSunUp  int    `json:"is_sun_up"`
+	} `json:"astro"`
+}
+type ForeCast struct {
+	Forecastday Forecastday
 }
 
 func loadEnv() {
@@ -73,7 +107,7 @@ func loadEnv() {
 }
 
 func getData() ([]byte, error) {
-	res, errRequest := http.Get("http://api.weatherapi.com/v1/current.json?key=" + myWeatherAPIKEY + "&q=London&aqi=no")
+	res, errRequest := http.Get("http://api.weatherapi.com/v1/forecast.json?key=" + myWeatherAPIKEY + "&q=Milan&days=1&aqi=no&alerts=no")
 	body, errBody := io.ReadAll(res.Body)
 
 	if res.StatusCode > 299 {
@@ -96,9 +130,9 @@ func main() {
 	if errBody != nil {
 		log.Fatal("error reading response")
 	}
-
+	//fmt.Println(string(body))
 	if json_err := json.Unmarshal(body, &wdata); json_err != nil {
 		log.Fatal(json_err)
 	}
-	fmt.Println("%s", wdata.Location)
+	fmt.Println("%s", wdata.ForeCast)
 }

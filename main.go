@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var myWeatherAPIKEY string
@@ -33,12 +34,6 @@ type Current struct {
 	Humidity         int       `json:"humidity"`
 	Cloud            int       `json:"cloud"`
 	FeelslikeC       float64   `json:"feelslike_c"`
-	WindchillC       float64   `json:"windchill_c"`
-	HeatindexC       float64   `json:"heatindex_c"`
-	DewpointC        float64   `json:"dewpoint_c"`
-	VisKm            float64   `json:"vis_km"`
-	UV               float64   `json:"uv"`
-	GustKph          float64   `json:"gust_kph"`
 }
 
 // Define the struct for the "location" object
@@ -48,9 +43,30 @@ type Location struct {
 	Country        string  `json:"country"`
 	Lat            float64 `json:"lat"`
 	Lon            float64 `json:"lon"`
-	TzID           string  `json:"tz_id"`
 	LocaltimeEpoch int     `json:"localtime_epoch"`
 	Localtime      string  `json:"localtime"`
+}
+
+type Day struct {
+	MaxtempC          float64 `json:"maxtemp_c"`
+	MintempC          float64 `json:"mintemp_c"`
+	AvgtempC          float64 `json:"avgtemp_c"`
+	AvgtempF          float64 `json:"avgtemp_f"`
+	TotalsnowCm       float64 `json:"totalsnow_cm"`
+	AvgvisKm          float64 `json:"avgvis_km"`
+	Avghumidity       float64 `json:"avghumidity"`
+	DailyWillItRain   int     `json:"daily_will_it_rain"`
+	DailyChanceOfRain int     `json:"daily_chance_of_rain"`
+	DailyWillItSnow   int     `json:"daily_will_it_snow"`
+	DailyChanceOfSnow int     `json:"daily_chance_of_snow"`
+}
+type ForecastDay struct {
+	Date string `json:"date"`
+	day  Day    `json:"day"`
+}
+
+type ForeCast struct {
+	forecastdays []ForecastDay
 }
 
 // Define the top-level struct for the entire JSON
@@ -59,40 +75,13 @@ type WeatherData struct {
 	Current  Current  `json:"current"`
 	ForeCast ForeCast `json:"forecast"`
 }
-type Forecastday []struct {
-	Date string `json:"date"`
-	Day  struct {
-		MaxtempC          float64 `json:"maxtemp_c"`
-		MintempC          float64 `json:"mintemp_c"`
-		AvgtempC          float64 `json:"avgtemp_c"`
-		AvgtempF          float64 `json:"avgtemp_f"`
-		MaxwindKph        float64 `json:"maxwind_kph"`
-		TotalsnowCm       float64 `json:"totalsnow_cm"`
-		AvgvisKm          float64 `json:"avgvis_km"`
-		Avghumidity       float64 `json:"avghumidity"`
-		DailyWillItRain   int     `json:"daily_will_it_rain"`
-		DailyChanceOfRain int     `json:"daily_chance_of_rain"`
-		DailyWillItSnow   int     `json:"daily_will_it_snow"`
-		DailyChanceOfSnow int     `json:"daily_chance_of_snow"`
-		Condition         struct {
-			Text string `json:"text"`
-			Icon string `json:"icon"`
-			Code int    `json:"code"`
-		} `json:"condition"`
-	} `json:"day"`
-	Astro struct {
-		Sunrise  string `json:"sunrise"`
-		Sunset   string `json:"sunset"`
-		Moonrise string `json:"moonrise"`
-		Moonset  string `json:"moonset"`
-		IsMoonUp int    `json:"is_moon_up"`
-		IsSunUp  int    `json:"is_sun_up"`
-	} `json:"astro"`
-}
-type ForeCast struct {
-	Forecastday Forecastday
-}
 
+func (d Day) temp() string {
+	formated := fmt.Sprintf("MaxtempC: %f\n", d.MaxtempC)
+	formated += fmt.Sprintf("MintempC: %f\n", d.MintempC)
+	formated += fmt.Sprintf("AvgtempC: %f\n", d.AvgtempC)
+	return formated
+}
 func loadEnv() {
 	path, rerr := os.Getwd()
 	if rerr != nil {
@@ -107,7 +96,10 @@ func loadEnv() {
 }
 
 func getData() ([]byte, error) {
-	res, errRequest := http.Get("http://api.weatherapi.com/v1/forecast.json?key=" + myWeatherAPIKEY + "&q=Milan&days=1&aqi=no&alerts=no")
+	requestSlice := []string{"http://api.weatherapi.com/v1/forecast.json?key=", myWeatherAPIKEY, "&q=Milan&days=1&aqi=no&alerts=no"}
+	url := strings.Join(requestSlice, "")
+
+	res, errRequest := http.Get(url)
 	body, errBody := io.ReadAll(res.Body)
 
 	if res.StatusCode > 299 {
@@ -130,9 +122,14 @@ func main() {
 	if errBody != nil {
 		log.Fatal("error reading response")
 	}
-	//fmt.Println(string(body))
+	fmt.Println(string(body))
 	if json_err := json.Unmarshal(body, &wdata); json_err != nil {
 		log.Fatal(json_err)
 	}
-	fmt.Println("%s", wdata.ForeCast)
+	tmp := wdata.ForeCast
+	fmt.Println(tmp.forecastdays)
+	//day:=fday.forecast
+
+	//fmt.Printf("%s",day.Date)
+
 }

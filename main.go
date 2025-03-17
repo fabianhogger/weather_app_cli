@@ -13,11 +13,44 @@ import (
 
 var myWeatherAPIKEY string
 
+// Define the top-level struct for the entire JSON
+type WeatherData struct {
+	Location Location `json:"location"`
+	Current  Current  `json:"current"`
+	Forecast Forecast `json:"forecast"`
+}
+
+type Forecast struct {
+	forecastday []ForecastDay `json:"forecastday"`
+}
+
+type ForecastDay struct {
+	Date string `json:"date,omitempty"`
+	Day  struct {
+		MaxTempC          float64   `json:"maxtemp_c"`
+		MinTempC          float64   `json:"mintemp_c"`
+		AvgTempC          float64   `json:"avgtemp_c"`
+		AvgTempF          float64   `json:"avgtemp_f"`
+		MaxWindKph        float64   `json:"maxwind_kph"`
+		TotalSnowCm       float64   `json:"totalsnow_cm"`
+		AvgVisKm          float64   `json:"avgvis_km"`
+		AvgHumidity       int       `json:"avghumidity"`
+		DailyWillItRain   int       `json:"daily_will_it_rain"`
+		DailyChanceOfRain int       `json:"daily_chance_of_rain"`
+		DailyWillItSnow   int       `json:"daily_will_it_snow"`
+		DailyChanceOfSnow int       `json:"daily_chance_of_snow"`
+		Condition         Condition `json:"condition"`
+		UV               float64    `json:"uv"`
+	} `json:"day,omitempty"`
+}
+
 type Condition struct {
 	Text string `json:"text"`
 	Icon string `json:"icon"`
 	Code int    `json:"code"`
 }
+
+
 
 // Define the struct for the "current" object
 type Current struct {
@@ -60,21 +93,10 @@ type Day struct {
 	DailyWillItSnow   int     `json:"daily_will_it_snow"`
 	DailyChanceOfSnow int     `json:"daily_chance_of_snow"`
 }
-type ForecastDay struct {
-	Date string `json:"date"`
-	day  Day    `json:"day"`
-}
 
-type ForeCast struct {
-	forecastdays []ForecastDay
-}
 
-// Define the top-level struct for the entire JSON
-type WeatherData struct {
-	Location Location `json:"location"`
-	Current  Current  `json:"current"`
-	ForeCast ForeCast `json:"forecast"`
-}
+
+
 
 func (d Day) temp() string {
 	formated := fmt.Sprintf("MaxtempC: %f\n", d.MaxtempC)
@@ -123,13 +145,26 @@ func main() {
 		log.Fatal("error reading response")
 	}
 	fmt.Println(string(body))
-	if json_err := json.Unmarshal(body, &wdata); json_err != nil {
+	if json_err := json.Unmarshal([]byte(body), &wdata); json_err != nil {
 		log.Fatal(json_err)
 	}
-	tmp := wdata.ForeCast
-	fmt.Println(tmp.forecastdays)
-	//day:=fday.forecast
+	// Print the results
+	fmt.Println("Location:", wdata.Location.Name, "-", wdata.Location.Country)
+	fmt.Println("Temperature:", wdata.Current.TempC, "°C")
+	fmt.Println("Condition:", wdata.Current.Condition.Text)
+	// Access the forecastday data
+	forecast := wdata.Forecast
+	if len(forecast.forecastday) == 0 {
+		fmt.Println("No forecast days found!")
+		return
+	}
 
-	//fmt.Printf("%s",day.Date)
-
+	for _, day := range forecast.forecastday {
+		fmt.Printf("Date: %s\n", day.Date)
+		fmt.Printf("Max Temp: %.1f°C\n", day.Day )
+		fmt.Printf("Min Temp: %.1f°C\n", day.Day )
+		fmt.Printf("Condition: %s\n", day.Day.Condition.Text)
+	}
+ 
 }
+ 

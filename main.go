@@ -40,7 +40,7 @@ type ForecastDay struct {
 		DailyWillItSnow   int       `json:"daily_will_it_snow"`
 		DailyChanceOfSnow int       `json:"daily_chance_of_snow"`
 		Condition         Condition `json:"condition"`
-		UV               float64    `json:"uv"`
+		UV                float64   `json:"uv"`
 	} `json:"day,omitempty"`
 }
 
@@ -49,8 +49,6 @@ type Condition struct {
 	Icon string `json:"icon"`
 	Code int    `json:"code"`
 }
-
-
 
 // Define the struct for the "current" object
 type Current struct {
@@ -94,17 +92,13 @@ type Day struct {
 	DailyChanceOfSnow int     `json:"daily_chance_of_snow"`
 }
 
-
-
-
-
 func (d Day) temp() string {
 	formated := fmt.Sprintf("MaxtempC: %f\n", d.MaxtempC)
 	formated += fmt.Sprintf("MintempC: %f\n", d.MintempC)
 	formated += fmt.Sprintf("AvgtempC: %f\n", d.AvgtempC)
 	return formated
 }
-func loadEnv() {
+func loadEnv() string {
 	path, rerr := os.Getwd()
 	if rerr != nil {
 		panic(rerr)
@@ -113,11 +107,11 @@ func loadEnv() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-	myWeatherAPIKEY = os.Getenv("API_KEY")
+	return os.Getenv("API_KEY")
 
 }
 
-func getData() ([]byte, error) {
+func getData(myWeatherAPIKEY string) ([]byte, error) {
 	requestSlice := []string{"http://api.weatherapi.com/v1/forecast.json?key=", myWeatherAPIKEY, "&q=Milan&days=1&aqi=no&alerts=no"}
 	url := strings.Join(requestSlice, "")
 
@@ -138,13 +132,12 @@ func getData() ([]byte, error) {
 }
 
 func main() {
-	var wdata WeatherData
-	loadEnv()
-	body, errBody := getData()
+	apiKey := loadEnv()
+	body, errBody := getData(apiKey)
 	if errBody != nil {
 		log.Fatal("error reading response")
 	}
-	fmt.Println(string(body))
+	var wdata WeatherData
 	if json_err := json.Unmarshal([]byte(body), &wdata); json_err != nil {
 		log.Fatal(json_err)
 	}
@@ -161,10 +154,9 @@ func main() {
 
 	for _, day := range forecast.forecastday {
 		fmt.Printf("Date: %s\n", day.Date)
-		fmt.Printf("Max Temp: %.1f°C\n", day.Day )
-		fmt.Printf("Min Temp: %.1f°C\n", day.Day )
+		fmt.Printf("Max Temp: %.1f°C\n", day.Day)
+		fmt.Printf("Min Temp: %.1f°C\n", day.Day)
 		fmt.Printf("Condition: %s\n", day.Day.Condition.Text)
 	}
- 
+
 }
- 
